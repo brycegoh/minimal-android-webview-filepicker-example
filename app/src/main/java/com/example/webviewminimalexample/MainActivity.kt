@@ -22,12 +22,28 @@ class MainActivity : AppCompatActivity() {
     private val filePickerLauncher: ActivityResultLauncher<Intent> =
         registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
             if (result.resultCode == Activity.RESULT_OK) {
-                val uri = if (result.data == null || result.data?.data == null) {
-                    cameraImageUri
-                } else {
-                    result.data?.data
+                val data = result.data
+
+                // Handle multiple or single image selection
+                val clipData = data?.clipData
+                val uris = mutableListOf<Uri>()
+
+                if (clipData != null) {
+                    // Multiple images selected
+                    for (i in 0 until clipData.itemCount) {
+                        uris.add(clipData.getItemAt(i).uri)
+                    }
+                } else if (data?.data != null) {
+                    // Single image selected
+                    uris.add(data.data!!)
                 }
-                fileChooserCallback?.onReceiveValue(uri?.let { arrayOf(it) })
+
+                // Pass the URIs to the WebView
+                if (uris.isNotEmpty()) {
+                    fileChooserCallback?.onReceiveValue(uris.toTypedArray())
+                } else {
+                    fileChooserCallback?.onReceiveValue(null)
+                }
             } else {
                 fileChooserCallback?.onReceiveValue(null)
             }
@@ -71,6 +87,7 @@ class MainActivity : AppCompatActivity() {
                 // Intent for picking an image from the gallery
                 val galleryIntent = Intent(Intent.ACTION_PICK, android.provider.MediaStore.Images.Media.EXTERNAL_CONTENT_URI).apply {
                     type = "image/*" // Restrict to image files
+                    putExtra(Intent.EXTRA_ALLOW_MULTIPLE, true) // Allow multiple selection
                 }
 
                 val chooserIntent = Intent.createChooser(galleryIntent, "Select Image")
