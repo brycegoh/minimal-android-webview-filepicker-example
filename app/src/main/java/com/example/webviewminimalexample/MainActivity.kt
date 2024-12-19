@@ -1,4 +1,5 @@
 package com.example.webviewminimalexample
+
 import android.app.Activity
 import android.content.Intent
 import android.net.Uri
@@ -21,32 +22,31 @@ class MainActivity : AppCompatActivity() {
 
     private val filePickerLauncher: ActivityResultLauncher<Intent> =
         registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
+            println(result)
             if (result.resultCode == Activity.RESULT_OK) {
-                val data = result.data
-
-                // Handle multiple or single image selection
-                val clipData = data?.clipData
                 val uris = mutableListOf<Uri>()
 
-                if (clipData != null) {
-                    // Multiple images selected
-                    for (i in 0 until clipData.itemCount) {
-                        uris.add(clipData.getItemAt(i).uri)
+                val data = result.data
+                val clipData = data?.clipData
+
+                if (clipData != null || data?.data != null) {
+                    if (clipData != null) {
+                        for (i in 0 until clipData.itemCount) {
+                            uris.add(clipData.getItemAt(i).uri)
+                        }
+                    } else if (data?.data != null) {
+                        uris.add(data.data!!)
                     }
-                } else if (data?.data != null) {
-                    // Single image selected
-                    uris.add(data.data!!)
+                } else if (cameraImageUri != null) {
+                    uris.add(cameraImageUri!!)
                 }
 
-                // Pass the URIs to the WebView
-                if (uris.isNotEmpty()) {
-                    fileChooserCallback?.onReceiveValue(uris.toTypedArray())
-                } else {
-                    fileChooserCallback?.onReceiveValue(null)
-                }
+                fileChooserCallback?.onReceiveValue(uris.toTypedArray())
             } else {
                 fileChooserCallback?.onReceiveValue(null)
             }
+            fileChooserCallback = null
+            cameraImageUri = null // Reset URI after use
         }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -72,7 +72,7 @@ class MainActivity : AppCompatActivity() {
             ): Boolean {
                 fileChooserCallback = filePathCallback
 
-                // Create an intent for capturing a photo
+                // Create intent for capturing a photo
                 val takePictureIntent = Intent(android.provider.MediaStore.ACTION_IMAGE_CAPTURE)
                 if (takePictureIntent.resolveActivity(packageManager) != null) {
                     val photoFile = createImageFile()
@@ -86,10 +86,11 @@ class MainActivity : AppCompatActivity() {
 
                 // Intent for picking an image from the gallery
                 val galleryIntent = Intent(Intent.ACTION_PICK, android.provider.MediaStore.Images.Media.EXTERNAL_CONTENT_URI).apply {
-                    type = "image/*" // Restrict to image files
-                    putExtra(Intent.EXTRA_ALLOW_MULTIPLE, true) // Allow multiple selection
+                    type = "image/*"
+                    putExtra(Intent.EXTRA_ALLOW_MULTIPLE, true)
                 }
 
+                // Combine intents into a chooser
                 val chooserIntent = Intent.createChooser(galleryIntent, "Select Image")
                 chooserIntent.putExtra(Intent.EXTRA_INITIAL_INTENTS, arrayOf(takePictureIntent))
 
@@ -104,7 +105,8 @@ class MainActivity : AppCompatActivity() {
     private fun createImageFile(): File {
         val timeStamp = SimpleDateFormat("yyyyMMdd_HHmmss", Locale.US).format(Date())
         val storageDir = getExternalFilesDir(Environment.DIRECTORY_PICTURES)
+        println("storage dir")
+        println(storageDir)
         return File.createTempFile("IMG_$timeStamp", ".jpg", storageDir)
     }
 }
-
