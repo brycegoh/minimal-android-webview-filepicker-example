@@ -39,10 +39,7 @@ class MainActivity : AppCompatActivity() {
                 val data = result.data
                 val clipData = data?.clipData
 
-                // Check if data came from gallery
                 if (clipData != null || data?.data != null) {
-                    // Gallery image(s) selected, so do NOT use cameraImageUri.
-                    // Just add the gallery URI(s) to 'uris'.
                     if (clipData != null) {
                         for (i in 0 until clipData.itemCount) {
                             uris.add(clipData.getItemAt(i).uri)
@@ -51,7 +48,6 @@ class MainActivity : AppCompatActivity() {
                         uris.add(data.data!!)
                     }
                 } else if (cameraImageUri != null) {
-                    // No gallery data present, so we assume user used the camera option
                     uris.add(cameraImageUri!!)
                 }
 
@@ -60,7 +56,7 @@ class MainActivity : AppCompatActivity() {
                 fileChooserCallback?.onReceiveValue(null)
             }
             fileChooserCallback = null
-            cameraImageUri = null // Reset URI after use
+            cameraImageUri = null
         }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -83,7 +79,7 @@ class MainActivity : AppCompatActivity() {
         webView.setDownloadListener { url, userAgent, contentDisposition, mimeType, contentLength ->
             println(url)
             if (url.startsWith("blob:")) {
-                fetchBlobData(url) // Fetch the blob content via JavaScript
+                fetchBlobData(url)
             }
         }
 
